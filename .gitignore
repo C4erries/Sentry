@@ -1,0 +1,13 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go tooling
+pkg/
+bin/
+
+# Log files
+*.log
