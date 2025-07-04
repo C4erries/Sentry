@@ -3,7 +3,7 @@ package events
 import "time"
 
 type BaseEvent struct {
-	EventType string    `json:"event_type"`
+	EventType EventType `json:"event_type"`
 	UserId    string    `json:"user_id"`
 	Timestamp time.Time `json:"timestamp"`
 	IP        string    `json:"ip"`
