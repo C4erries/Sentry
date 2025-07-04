@@ -57,12 +57,13 @@ services:
         dockerfile: Dockerfile
       depends_on:
         - kafka
-        - redis
-        - postgres
+        - kafka-ui
+        #- redis
+        #- postgres
       ports:
-        - "8080:8080"
+        - "8090:8090"
       environment:
-        KAFKA_ADDR: kafka:9092
+        KAFKA_ADDR: kafka:29092
         REDIS_ADDR: redis:6379
         POSTGRES_DSN: postgres://sentry:sentrypass@postgres:5432/sentry_db?sslmode=disable
       command: ["/sentry"]

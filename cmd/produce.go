@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/c4erries/Sentry/internal/events"
-	kc "github.com/c4erries/Sentry/internal/kafkaclient"
-	"github.com/segmentio/kafka-go"
+	"github.com/c4erries/Sentry/internal/kafka"
 	"github.com/spf13/cobra"
 )
 
@@ -26,28 +24,43 @@ var produceCmd = &cobra.Command{
 }
 
 var (
-	eventType string
-	userID    int
-	count     int
+	payloadType     string
+	baseEvent       events.BaseEvent
+	userId          int
+	count           int
+	loginData       events.LoginData
+	transactionData events.TransactionData
 )
 
 func init() {
 	rootCmd.AddCommand(produceCmd)
 
-	produceCmd.Flags().StringVarP(&eventType, "type", "t", "", "event type (login, click, transaction)")
-	produceCmd.Flags().IntVarP(&userID, "user_id", "u", 0, "user ID")
+	produceCmd.Flags().StringVarP(&payloadType, "type", "t", "", "event type (login, click, transaction)")
+
+	produceCmd.Flags().IntVarP(&userId, "user_id", "u", 0, "user ID")
 	produceCmd.Flags().IntVarP(&count, "count", "c", 1, "number of events to send")
+	produceCmd.Flags().StringVar(&baseEvent.IP, "ip", "", "IP adress")
+
+	//Login
+	produceCmd.Flags().StringVar(&loginData.Method, "method", "", "login method")
+	produceCmd.Flags().BoolVar(&loginData.Success, "success", false, "login success")
+
+	//Transaction
+	produceCmd.Flags().Float64Var(&transactionData.Amount, "amount", 0, "transaction amount")
+	produceCmd.Flags().StringVar(&transactionData.Currency, "currency", "", "transaction currency")
 
 	produceCmd.MarkFlagRequired("type")
 	produceCmd.MarkFlagRequired("user_id")
 }
 
 func runProduce() {
-	payloadType := events.EventType(eventType)
-	if !payloadType.IsValid() {
-		log.Fatalf("payload type is invalid")
+	baseEvent.EventType = events.EventType(payloadType)
+	baseEvent.UserId = "#" + strconv.Itoa(userId)
+	if !baseEvent.EventType.IsValid() {
+		log.Fatalf("payload type is invalid. Type: %v", baseEvent.EventType)
 	}
-	p, err := kc.NewProducer([]string{"0.0.0.0:9092"}, "events_topic")
+
+	p, err := kafka.NewProducer([]string{"0.0.0.0:9092"}, "events_topic")
 	if err != nil {
 		log.Fatalf("create new producer error: %v", err)
 	}
@@ -55,30 +68,32 @@ func runProduce() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	msgs := make([]kafka.Message, 0, count)
+	es := make([]events.Event, 0, count)
 	for i := 0; i < count; i++ {
 
-		payload := map[string]interface{}{
-			"event_type": payloadType,
-			"user_id":    userID,
-			"timestamp":  time.Now().UTC().Format(time.RFC3339),
+		var data interface{}
+		switch baseEvent.EventType {
+		case events.EventLogin:
+			data = loginData
+		case events.EventTransaction:
+			data = transactionData
+		default:
+			log.Fatalf("data is not assignable for that event: %v", baseEvent.EventType)
 		}
 
-		data, err := json.Marshal(payload)
-		if err != nil {
-			log.Fatalf("marshal error: %v", err)
+		currentEvent := baseEvent
+		currentEvent.Timestamp = time.Now().UTC()
+
+		e := events.Event{
+			BaseEvent: currentEvent,
+			Data:      data,
 		}
 
-		msg := kafka.Message{
-			Key:   []byte("user_" + strconv.Itoa(userID)),
-			Value: data,
-		}
-
-		msgs = append(msgs, msg)
+		es = append(es, e)
 
 	}
 
-	if err = p.Produce(ctx, msgs...); err != nil {
+	if err = p.ProduceBatch(ctx, es...); err != nil {
 		log.Fatalf("produce error: %v", err)
 	}
 }
