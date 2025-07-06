@@ -5,14 +5,14 @@ import (
 	"log"
 	"sync"
 
-	"github.com/c4erries/Sentry/internal/events"
+	"github.com/c4erries/Sentry/internal/model"
 )
 
-type EventHalndler interface {
-	Process(ctx context.Context, e events.Event) error
+type EventHandler interface {
+	Process(ctx context.Context, e model.Event) error
 }
 
-func StartPool(ctx context.Context, jobs <-chan events.Event, handler EventHalndler, workerCount int) *sync.WaitGroup {
+func StartPool(ctx context.Context, jobs <-chan model.Event, handler EventHandler, workerCount int) *sync.WaitGroup {
 	var wg sync.WaitGroup
 
 	for id := 0; id < workerCount; id++ {

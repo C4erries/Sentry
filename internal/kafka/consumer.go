@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/c4erries/Sentry/internal/events"
+	"github.com/c4erries/Sentry/internal/model"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -32,7 +32,7 @@ func NewConsumer(brokers []string, topic string, groupID string) (*Consumer, err
 	return &Consumer{reader: r}, nil
 }
 
-func (c *Consumer) Start(ctx context.Context, out chan events.Event) {
+func (c *Consumer) Start(ctx context.Context, out chan model.Event) {
 	defer c.reader.Close()
 
 	for {
@@ -46,7 +46,7 @@ func (c *Consumer) Start(ctx context.Context, out chan events.Event) {
 			continue
 		}
 
-		var e events.Event
+		var e model.Event
 		if err = json.Unmarshal(m.Value, &e); err != nil {
 			log.Printf("json unmarshal event error: %v", err)
 			continue

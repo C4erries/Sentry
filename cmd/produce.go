@@ -6,17 +6,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/c4erries/Sentry/internal/events"
 	"github.com/c4erries/Sentry/internal/kafka"
+	"github.com/c4erries/Sentry/internal/model"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
 var produceCmd = &cobra.Command{
 	Use:   "produce",
-	Short: "Produce events to Kafka",
-	Long: `This command produces events to Kafka. 
-	You can specify the event type, user ID, and the number of events to send. For example:
-		To produce 10 login events for user ID 456:
+	Short: "Produce model to Kafka",
+	Long: `This command produces model to Kafka. 
+	You can specify the event type, user ID, and the number of model to send. For example:
+		To produce 10 login model for user ID 456:
   produce --type login --user_id 456 --count 10`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runProduce()
@@ -25,11 +26,11 @@ var produceCmd = &cobra.Command{
 
 var (
 	payloadType     string
-	baseEvent       events.BaseEvent
+	baseEvent       model.BaseEvent
 	userId          int
 	count           int
-	loginData       events.LoginData
-	transactionData events.TransactionData
+	loginData       model.LoginData
+	transactionData model.TransactionData
 )
 
 func init() {
@@ -54,7 +55,7 @@ func init() {
 }
 
 func runProduce() {
-	baseEvent.EventType = events.EventType(payloadType)
+	baseEvent.EventType = model.EventType(payloadType)
 	baseEvent.UserId = "#" + strconv.Itoa(userId)
 	if !baseEvent.EventType.IsValid() {
 		log.Fatalf("payload type is invalid. Type: %v", baseEvent.EventType)
@@ -68,14 +69,14 @@ func runProduce() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	es := make([]events.Event, 0, count)
+	es := make([]model.Event, 0, count)
 	for i := 0; i < count; i++ {
 
 		var data interface{}
 		switch baseEvent.EventType {
-		case events.EventLogin:
+		case model.EventLogin:
 			data = loginData
-		case events.EventTransaction:
+		case model.EventTransaction:
 			data = transactionData
 		default:
 			log.Fatalf("data is not assignable for that event: %v", baseEvent.EventType)
@@ -84,8 +85,9 @@ func runProduce() {
 		currentEvent := baseEvent
 		currentEvent.Timestamp = time.Now().UTC()
 
-		e := events.Event{
+		e := model.Event{
 			BaseEvent: currentEvent,
+			ID:        uuid.NewString(),
 			Data:      data,
 		}
 

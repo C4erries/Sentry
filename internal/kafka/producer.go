@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/c4erries/Sentry/internal/events"
+	"github.com/c4erries/Sentry/internal/model"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -25,7 +25,7 @@ func NewProducer(address []string, topic string) (*Producer, error) {
 	return &Producer{writer: w}, nil
 }
 
-func (p *Producer) Produce(ctx context.Context, e events.Event) error {
+func (p *Producer) Produce(ctx context.Context, e model.Event) error {
 	data, err := json.Marshal(e)
 	if err != nil {
 		return fmt.Errorf("event marshal error: %v", err)
@@ -39,7 +39,7 @@ func (p *Producer) Produce(ctx context.Context, e events.Event) error {
 	return p.writer.WriteMessages(ctx, msg)
 }
 
-func (p *Producer) ProduceBatch(ctx context.Context, evs ...events.Event) error {
+func (p *Producer) ProduceBatch(ctx context.Context, evs ...model.Event) error {
 	var msgs []kafka.Message
 	for _, e := range evs {
 		data, err := json.Marshal(e)
