@@ -1,4 +1,4 @@
-package events
+package model
 
 import "time"
 
@@ -12,6 +12,7 @@ type BaseEvent struct {
 
 type Event struct {
 	BaseEvent
+	ID   string
 	Data interface{} `json:"data"`
 }
 

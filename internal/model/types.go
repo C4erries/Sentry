@@ -1,4 +1,4 @@
-package events
+package model
 
 type EventType string
 
@@ -13,4 +13,8 @@ func (e EventType) IsValid() bool {
 		return true
 	}
 	return false
+}
+
+func (e EventType) String() string {
+	return string(e)
 }
