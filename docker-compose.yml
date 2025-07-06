@@ -58,7 +58,7 @@ services:
       depends_on:
         - kafka
         - kafka-ui
-        #- redis
+        - redis
         #- postgres
       ports:
         - "8090:8090"
