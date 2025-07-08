@@ -1,5 +1,7 @@
 package model
 
+import "fmt"
+
 type EventType string
 
 const (
@@ -7,12 +9,12 @@ const (
 	EventTransaction EventType = "transaction"
 )
 
-func (e EventType) IsValid() bool {
+func (e EventType) Validate() error {
 	switch e {
 	case EventLogin, EventTransaction:
-		return true
+		return nil
 	}
-	return false
+	return fmt.Errorf("unknown event type")
 }
 
 func (e EventType) String() string {

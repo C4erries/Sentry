@@ -1,6 +1,11 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type BaseEvent struct {
 	EventType EventType `json:"event_type"`
@@ -12,8 +17,24 @@ type BaseEvent struct {
 
 type Event struct {
 	BaseEvent
-	ID   string
+	ID   string      `json:"id"` //uuid
 	Data interface{} `json:"data"`
+}
+
+func NewEvent() Event {
+	return Event{
+		ID: uuid.New().String(),
+	}
+}
+
+func (e Event) Validate() error {
+	if _, err := uuid.Parse(e.ID); err != nil {
+		return fmt.Errorf("invalid UUID: %v", err)
+	}
+	if err := e.BaseEvent.EventType.Validate(); err != nil {
+		return fmt.Errorf("invalid EventType: %v", err)
+	}
+	return nil
 }
 
 type LoginData struct {

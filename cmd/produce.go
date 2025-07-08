@@ -57,9 +57,6 @@ func init() {
 func runProduce() {
 	baseEvent.EventType = model.EventType(payloadType)
 	baseEvent.UserId = "#" + strconv.Itoa(userId)
-	if !baseEvent.EventType.IsValid() {
-		log.Fatalf("payload type is invalid. Type: %v", baseEvent.EventType)
-	}
 
 	p, err := kafka.NewProducer([]string{"0.0.0.0:9092"}, "events_topic")
 	if err != nil {
