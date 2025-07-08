@@ -8,7 +8,6 @@ import (
 
 	"github.com/c4erries/Sentry/internal/kafka"
 	"github.com/c4erries/Sentry/internal/model"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -57,9 +56,6 @@ func init() {
 func runProduce() {
 	baseEvent.EventType = model.EventType(payloadType)
 	baseEvent.UserId = "#" + strconv.Itoa(userId)
-	if !baseEvent.EventType.IsValid() {
-		log.Fatalf("payload type is invalid. Type: %v", baseEvent.EventType)
-	}
 
 	p, err := kafka.NewProducer([]string{"0.0.0.0:9092"}, "events_topic")
 	if err != nil {
@@ -85,11 +81,7 @@ func runProduce() {
 		currentEvent := baseEvent
 		currentEvent.Timestamp = time.Now().UTC()
 
-		e := model.Event{
-			BaseEvent: currentEvent,
-			ID:        uuid.NewString(),
-			Data:      data,
-		}
+		e := model.NewEvent(currentEvent, data)
 
 		es = append(es, e)
 
