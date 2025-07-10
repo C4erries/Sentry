@@ -7,5 +7,6 @@ import (
 )
 
 type AlertSink interface {
-	Send(ctx context.Context, alert model.Alert) error
+	ID() string
+	Send(ctx context.Context, alert *model.Alert) error
 }
