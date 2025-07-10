@@ -16,8 +16,8 @@ var produceCmd = &cobra.Command{
 	Short: "Produce model to Kafka",
 	Long: `This command produces model to Kafka. 
 	You can specify the event type, user ID, and the number of model to send. For example:
-		To produce 10 login model for user ID 456:
-  produce --type login --user_id 456 --count 10`,
+		To produce 10 login model for user ID 456 from Russia:
+  produce --type login --user_id 456 --count 10 --country RU`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runProduce()
 	},
@@ -40,6 +40,7 @@ func init() {
 	produceCmd.Flags().IntVarP(&userId, "user_id", "u", 0, "user ID")
 	produceCmd.Flags().IntVarP(&count, "count", "c", 1, "number of events to send")
 	produceCmd.Flags().StringVar(&baseEvent.IP, "ip", "", "IP adress")
+	produceCmd.Flags().StringVar(&baseEvent.GeoCountry, "country", "", "Geo Country")
 
 	//Login
 	produceCmd.Flags().StringVar(&loginData.Method, "method", "", "login method")
@@ -57,7 +58,7 @@ func runProduce() {
 	baseEvent.EventType = model.EventType(payloadType)
 	baseEvent.UserId = "#" + strconv.Itoa(userId)
 
-	p, err := kafka.NewProducer([]string{"0.0.0.0:9092"}, "events_topic")
+	p, err := kafka.NewProducer([]string{"0.0.0.0:29092"}, "events_topic")
 	if err != nil {
 		log.Fatalf("create new producer error: %v", err)
 	}
@@ -65,7 +66,7 @@ func runProduce() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	es := make([]model.Event, 0, count)
+	es := make([]*model.Event, 0, count)
 	for i := 0; i < count; i++ {
 
 		var data interface{}
@@ -81,8 +82,11 @@ func runProduce() {
 		currentEvent := baseEvent
 		currentEvent.Timestamp = time.Now().UTC()
 
-		e := model.NewEvent(currentEvent, data)
-
+		e, err := model.NewEvent(currentEvent, data)
+		if err != nil {
+			log.Fatalf("NewEvent error: %v", err)
+			return
+		}
 		es = append(es, e)
 
 	}
