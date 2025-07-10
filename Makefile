@@ -22,4 +22,4 @@ docker-build:
 
 .PHONY: up
 up:
-	$(DOCKER_COMPOSE) up --build
+	$(DOCKER_COMPOSE) up --build "sentry"
