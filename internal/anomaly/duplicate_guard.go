@@ -23,7 +23,7 @@ func NewDuplicateGuard(r redis.RedisClient, ttl time.Duration) *DuplicateGuard {
 	}
 }
 
-func (d *DuplicateGuard) IsDuplicate(ctx context.Context, e model.Event) (bool, error) {
+func (d *DuplicateGuard) IsDuplicate(ctx context.Context, e *model.Event) (bool, error) {
 	key := fmt.Sprintf("%s:%s", d.prefix, e.ID)
 
 	ok, err := d.redis.SetNX(ctx, key, "seen", d.ttl).Result()
