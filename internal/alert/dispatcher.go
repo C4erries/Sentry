@@ -3,20 +3,37 @@ package alert
 import (
 	"context"
 	"log"
+	"sync"
 
 	"github.com/c4erries/Sentry/internal/model"
 )
 
 type Dispatcher struct {
-	Sink AlertSink
-	Chan chan model.Alert
+	Sinks []AlertSink
+	Chan  chan *model.Alert
 }
 
-func NewDispatcher(sink AlertSink, bufferSize int) *Dispatcher {
+func NewDispatcher(sinks []AlertSink, bufferSize int) *Dispatcher {
 	return &Dispatcher{
-		Sink: sink,
-		Chan: make(chan model.Alert, bufferSize),
+		Sinks: sinks,
+		Chan:  make(chan *model.Alert, bufferSize),
 	}
+}
+
+func (d *Dispatcher) SendAll(ctx context.Context, alert *model.Alert) {
+	var wg sync.WaitGroup
+	wg.Add(len(d.Sinks))
+
+	for _, sink := range d.Sinks {
+		go func(s AlertSink) {
+			defer wg.Done()
+			if err := s.Send(ctx, alert); err != nil {
+				log.Printf("[dispatcher] sink-%s failed: %v", s.ID(), err)
+			}
+		}(sink)
+	}
+
+	wg.Wait()
 }
 
 func (d *Dispatcher) Run(ctx context.Context) {
@@ -31,9 +48,7 @@ func (d *Dispatcher) Run(ctx context.Context) {
 				log.Println("[dispatcher] alert channel closed")
 				return
 			}
-			if err := d.Sink.Send(ctx, alert); err != nil {
-				log.Printf("[dispatcher] failed to send alert: %v", err)
-			}
+			d.SendAll(ctx, alert)
 		}
 	}
 }
