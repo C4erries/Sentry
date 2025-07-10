@@ -26,6 +26,9 @@ func NewProducer(address []string, topic string) (*Producer, error) {
 }
 
 func (p *Producer) Produce(ctx context.Context, e model.Event) error {
+	if err := e.Validate(); err != nil {
+		return fmt.Errorf("event:%s -- validation failed:%v", e.ID, err)
+	}
 	data, err := json.Marshal(e)
 	if err != nil {
 		return fmt.Errorf("event marshal error: %v", err)
@@ -39,9 +42,14 @@ func (p *Producer) Produce(ctx context.Context, e model.Event) error {
 	return p.writer.WriteMessages(ctx, msg)
 }
 
-func (p *Producer) ProduceBatch(ctx context.Context, evs ...model.Event) error {
+func (p *Producer) ProduceBatch(ctx context.Context, evs ...*model.Event) error {
 	var msgs []kafka.Message
 	for _, e := range evs {
+
+		if err := e.Validate(); err != nil {
+			return fmt.Errorf("event:%s -- validation failed:%v", e.ID, err)
+		}
+
 		data, err := json.Marshal(e)
 		if err != nil {
 			return fmt.Errorf("event marshal error: %v", err)

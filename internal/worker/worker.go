@@ -5,14 +5,15 @@ import (
 	"log"
 	"sync"
 
+	"github.com/c4erries/Sentry/internal/kafka"
 	"github.com/c4erries/Sentry/internal/model"
 )
 
 type EventHandler interface {
-	Process(ctx context.Context, e model.Event) error
+	Process(ctx context.Context, e *model.Event) error
 }
 
-func StartPool(ctx context.Context, jobs <-chan model.Event, handler EventHandler, workerCount int) *sync.WaitGroup {
+func StartPool(ctx context.Context, jobs <-chan *kafka.KafkaEvent, handler EventHandler, workerCount int) *sync.WaitGroup {
 	var wg sync.WaitGroup
 
 	for id := 0; id < workerCount; id++ {
@@ -31,8 +32,11 @@ func StartPool(ctx context.Context, jobs <-chan model.Event, handler EventHandle
 						log.Printf("[worker-%d] stopping (jobs channel closed)", workerID)
 						return
 					}
-					if err := handler.Process(ctx, job); err != nil {
+					if err := handler.Process(ctx, job.Event); err != nil {
 						log.Printf("[worker-%d] error processing event %v: %v", workerID, job, err)
+					}
+					if err := job.Commit(); err != nil {
+						log.Printf("[event-%s] commit error: %v", job.ID, err)
 					}
 				}
 			}

@@ -23,6 +23,7 @@ func NewProcessor(cache redis.RedisClient, dispatcher *alert.Dispatcher) (*Proce
 	dupGuard := anomaly.NewDuplicateGuard(cache, 15*time.Second)
 	reg := &anomaly.DetectorRegistry{}
 	reg.Registry(anomaly.NewLoginStormDetector(cache, 15*time.Minute, 5))
+	reg.Registry(anomaly.NewGeoSwitchingDetector(cache, 5*time.Minute))
 	return &Processor{
 		dupGuard:   dupGuard,
 		registry:   reg,
@@ -30,7 +31,7 @@ func NewProcessor(cache redis.RedisClient, dispatcher *alert.Dispatcher) (*Proce
 	}, nil
 }
 
-func (p *Processor) Process(ctx context.Context, e model.Event) error {
+func (p *Processor) Process(ctx context.Context, e *model.Event) error {
 	isDup, err := p.dupGuard.IsDuplicate(ctx, e)
 	if err != nil {
 		return fmt.Errorf("dupGuard ISDUPLICATE error: %v", err)
