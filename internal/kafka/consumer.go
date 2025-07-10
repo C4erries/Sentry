@@ -18,6 +18,11 @@ type Message interface {
 	kafka.Message
 }
 
+type KafkaEvent struct {
+	*model.Event
+	Commit func() error
+}
+
 type Consumer struct {
 	reader *kafka.Reader
 }
@@ -28,11 +33,12 @@ func NewConsumer(brokers []string, topic string, groupID string) (*Consumer, err
 		Topic:          topic,
 		GroupID:        groupID,
 		SessionTimeout: sessionTimeout,
+		CommitInterval: 0,
 	})
 	return &Consumer{reader: r}, nil
 }
 
-func (c *Consumer) Start(ctx context.Context, out chan model.Event) {
+func (c *Consumer) Start(ctx context.Context, out chan *KafkaEvent) {
 	defer c.reader.Close()
 
 	for {
@@ -46,15 +52,26 @@ func (c *Consumer) Start(ctx context.Context, out chan model.Event) {
 			continue
 		}
 
-		var e model.Event
-		if err = json.Unmarshal(m.Value, &e); err != nil {
+		e := new(model.Event)
+		if err = json.Unmarshal(m.Value, e); err != nil {
 			log.Printf("json unmarshal event error: %v", err)
 			continue
 		}
-
-		out <- e
-		if err := c.reader.CommitMessages(ctx, m); err != nil {
-			log.Printf("commit error: %v", err)
+		if err = e.Normalize(); err != nil {
+			log.Printf("[event-%s] normalization error: %v", e.ID, err)
 		}
+		if err = e.Validate(); err != nil {
+			log.Printf("[event-%s] validation failed: %v", e.ID, err)
+			continue
+		}
+
+		kevent := &KafkaEvent{
+			Event: e,
+			Commit: func() error {
+				return c.reader.CommitMessages(ctx, m)
+			},
+		}
+
+		out <- kevent
 	}
 }

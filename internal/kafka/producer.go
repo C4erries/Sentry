@@ -42,7 +42,7 @@ func (p *Producer) Produce(ctx context.Context, e model.Event) error {
 	return p.writer.WriteMessages(ctx, msg)
 }
 
-func (p *Producer) ProduceBatch(ctx context.Context, evs ...model.Event) error {
+func (p *Producer) ProduceBatch(ctx context.Context, evs ...*model.Event) error {
 	var msgs []kafka.Message
 	for _, e := range evs {
 
