@@ -50,6 +50,7 @@ services:
         POSTGRES_DB: sentry_db
       volumes:
         - pg_data:/var/lib/postgresql/data
+        - ./deploy/init.sql:/docker-entrypoint-initdb.d/init.sql
 
     sentry:
       build:
@@ -59,7 +60,7 @@ services:
         - kafka
         - kafka-ui
         - redis
-        #- postgres
+        - postgres
       ports:
         - "8090:8090"
       environment:
