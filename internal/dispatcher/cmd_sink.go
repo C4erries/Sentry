@@ -1,4 +1,4 @@
-package alert
+package dispatcher
 
 import (
 	"context"
@@ -19,7 +19,7 @@ type Printable interface {
 	IsPrintable() bool
 }
 
-func (s *CmdSink) Send(ctx context.Context, alert *model.Alert) error {
+func (s *CmdSink) SendAlert(ctx context.Context, alert *model.Alert) error {
 	events_string := ""
 	for _, event := range alert.Events {
 		events_string += event.BaseEvent.EventType.String() + " "
