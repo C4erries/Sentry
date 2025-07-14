@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/Masterminds/squirrel"
+	_ "github.com/lib/pq"
 )
 
 type Storage struct {
