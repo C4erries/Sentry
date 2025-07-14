@@ -23,3 +23,9 @@ docker-build:
 .PHONY: up
 up:
 	$(DOCKER_COMPOSE) up --build "sentry"
+
+.PHONY: produce
+produce:
+	$(DOCKER_COMPOSE) exec sentry /sentry produce --type=login --user_id=123 --count=10 --country=RU --ip=0.0.0.52 --method=post --success=true
+.PHONY: migrate
+	$(DOCKER_COMPOSE) exec sentry /sentry migrate
