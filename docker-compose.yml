@@ -50,24 +50,34 @@ services:
         POSTGRES_DB: sentry_db
       volumes:
         - pg_data:/var/lib/postgresql/data
-        - ./deploy/init.sql:/docker-entrypoint-initdb.d/init.sql
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U sentry -d sentry_db"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
 
     sentry:
       build:
         context: .
         dockerfile: Dockerfile
       depends_on:
-        - kafka
-        - kafka-ui
-        - redis
-        - postgres
+        kafka:
+          condition: service_started
+        kafka-ui:
+          condition: service_started
+        redis:
+          condition: service_started
+        postgres:
+          condition: service_healthy
       ports:
         - "8090:8090"
       environment:
         KAFKA_ADDR: kafka:9092
         REDIS_ADDR: redis:6379
         POSTGRES_DSN: postgres://sentry:sentrypass@postgres:5432/sentry_db?sslmode=disable
-      command: ["/sentry"]
+      stdin_open: true
+      tty: true
+      command: ["serve"]
 
 
 volumes:

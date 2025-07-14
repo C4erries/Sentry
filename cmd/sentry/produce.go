@@ -1,8 +1,9 @@
-package cmd
+package main
 
 import (
 	"context"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
@@ -58,7 +59,7 @@ func runProduce() {
 	baseEvent.EventType = model.EventType(payloadType)
 	baseEvent.UserId = "#" + strconv.Itoa(userId)
 
-	p, err := kafka.NewProducer([]string{"0.0.0.0:29092"}, "events_topic")
+	p, err := kafka.NewProducer([]string{os.Getenv("KAFKA_ADDR")}, "events_topic")
 	if err != nil {
 		log.Fatalf("create new producer error: %v", err)
 	}
