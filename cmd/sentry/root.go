@@ -1,9 +1,12 @@
 package main
 
 import (
+	"log"
 	"os"
 
+	"github.com/c4erries/Sentry/internal/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -30,7 +33,19 @@ func Execute() {
 	}
 }
 
+var cfg *config.Config
+
 func init() {
+	rootCmd.PersistentFlags().AddFlagSet(pflag.CommandLine)
+
+	cobra.OnInitialize(func() {
+		var err error
+		cfg, err = config.LoadConfig()
+		if err != nil {
+			log.Fatalf("cannot load config: %v", err)
+		}
+	})
+
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
