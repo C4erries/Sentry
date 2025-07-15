@@ -34,8 +34,7 @@ func StartPool(ctx context.Context, jobs <-chan *kafka.KafkaEvent, handler Event
 					}
 					if err := handler.Process(ctx, job.Event); err != nil {
 						log.Printf("[worker-%d] error processing event %v: %v", workerID, job, err)
-					}
-					if err := job.Commit(); err != nil {
+					} else if err := job.Commit(); err != nil {
 						log.Printf("[event-%s] commit error: %v", job.ID, err)
 					}
 				}
