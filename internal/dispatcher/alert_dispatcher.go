@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"context"
 	"log"
+	"log/slog"
 	"sync"
 
 	"github.com/c4erries/Sentry/internal/model"
@@ -28,7 +29,11 @@ func (d *AlertDispatcher) SendAll(ctx context.Context, alert *model.Alert) {
 		go func(s AlertSink) {
 			defer wg.Done()
 			if err := s.SendAlert(ctx, alert); err != nil {
-				log.Printf("[alert-dispatcher] sink-%s failed: %v", s.ID(), err)
+				slog.ErrorContext(ctx, "[alert-dispatcher] sink failed",
+					slog.String("sink id", s.ID()),
+					slog.Any("alert id", alert.ID),
+					slog.Any("err", err),
+				)
 			}
 		}(sink)
 	}

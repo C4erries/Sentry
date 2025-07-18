@@ -3,7 +3,7 @@ package processor
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/c4erries/Sentry/internal/anomaly"
@@ -45,7 +45,7 @@ func (p *Processor) Process(ctx context.Context, e *model.Event) error {
 	select {
 	case p.eventDispatcher.Chan <- e:
 	default:
-		log.Panicln("event channel full, dropped event:", e)
+		slog.ErrorContext(ctx, "event channel full", slog.Any("dropped event", e))
 	}
 
 	alerts := p.registry.ProcessAll(ctx, e)
@@ -53,7 +53,7 @@ func (p *Processor) Process(ctx context.Context, e *model.Event) error {
 		select {
 		case p.alertDispatcher.Chan <- alert:
 		default:
-			log.Panicln("alert channel full, dropped alert:", alert)
+			slog.ErrorContext(ctx, "alert channel full", slog.Any("dropped alert", alert))
 		}
 	}
 	return nil

@@ -2,11 +2,12 @@ package app
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/c4erries/Sentry/internal/config"
 	"github.com/c4erries/Sentry/internal/dispatcher"
 	"github.com/c4erries/Sentry/internal/kafka"
 	"github.com/c4erries/Sentry/internal/processor"
@@ -16,18 +17,20 @@ import (
 	go_redis "github.com/redis/go-redis/v9"
 )
 
-func Serve() {
+func Serve(cfg *config.Config) {
+	slog.Info("Config", slog.Any("config", cfg))
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	redisClient := go_redis.NewClient(&go_redis.Options{
-		Addr: os.Getenv("REDIS_ADDR"),
+		Addr: cfg.Redis.Addr,
 	})
 	wrappedRedis := redis.NewAdapter(redisClient)
 
-	postgres, err := storage.NewStorage(os.Getenv("POSTGRES_DSN"))
+	postgres, err := storage.NewStorage(&cfg.Postgres)
 	if err != nil {
-		log.Fatalf("failed to connect to db: %v", err)
+		slog.ErrorContext(ctx, "failed to connect to db", slog.Any("err", err))
+		os.Exit(1)
 	}
 	storageSink := dispatcher.NewStorageSink(postgres.Events, postgres.Alerts)
 
@@ -37,7 +40,7 @@ func Serve() {
 			dispatcher.NewRedisSink(wrappedRedis, redis.NewRedisPubSub(redisClient, "alerts")),
 			storageSink,
 		},
-		5,
+		10,
 	)
 	go alertDispatcher.Run(ctx)
 
@@ -45,21 +48,27 @@ func Serve() {
 		[]dispatcher.EventSink{
 			storageSink,
 		},
-		5,
+		10,
 	)
 	go eventDispatcher.Run(ctx)
 
 	processor, err := processor.NewProcessor(wrappedRedis, eventDispatcher, alertDispatcher)
 	if err != nil {
-		log.Fatalf("cannot create processor: %v", err)
+		slog.ErrorContext(ctx, "cannot create processor", slog.Any("err", err))
+		os.Exit(1)
 	}
 
 	jobs := make(chan *kafka.KafkaEvent, 100)
 	wg := worker.StartPool(ctx, jobs, processor, 5)
 
-	consumer, err := kafka.NewConsumer([]string{os.Getenv("KAFKA_ADDR")}, "events_topic", "sentry-core")
+	consumer, err := kafka.NewConsumer(
+		cfg.Kafka.Brokers,
+		cfg.Kafka.EventTopic,
+		cfg.Kafka.ConsumerGroupID,
+	)
 	if err != nil {
-		log.Fatalf("cannot create consumer: %v", err)
+		slog.ErrorContext(ctx, "cannot create consumer", slog.Any("err", err))
+		os.Exit(1)
 	}
 	go func() {
 		consumer.Start(ctx, jobs)
@@ -75,5 +84,5 @@ func Serve() {
 	close(eventDispatcher.Chan)
 	postgres.DB.Close()
 	wg.Wait()
-	log.Println("Service stopped.")
+	slog.InfoContext(ctx, "Service stoped.")
 }

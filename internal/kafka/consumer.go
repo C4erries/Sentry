@@ -3,7 +3,8 @@ package kafka
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/c4erries/Sentry/internal/model"
@@ -28,6 +29,9 @@ type Consumer struct {
 }
 
 func NewConsumer(brokers []string, topic string, groupID string) (*Consumer, error) {
+	if groupID == "" {
+		return nil, fmt.Errorf("group id can't be empty")
+	}
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:        brokers,
 		Topic:          topic,
@@ -45,23 +49,23 @@ func (c *Consumer) Start(ctx context.Context, out chan *KafkaEvent) {
 		m, err := c.reader.ReadMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
-				log.Println("Context canceled, stoping consumer")
+				slog.InfoContext(ctx, "Context canceled, stoping consumer")
 				break
 			}
-			log.Printf("Fetch error: %v", err)
+			slog.WarnContext(ctx, "Fetch kafka message error", slog.Any("err", err))
 			continue
 		}
 
 		e := new(model.Event)
 		if err = json.Unmarshal(m.Value, e); err != nil {
-			log.Printf("json unmarshal event error: %v", err)
+			slog.ErrorContext(ctx, "json unmarshal event error", slog.Any("err", err))
 			continue
 		}
 		if err = e.Normalize(); err != nil {
-			log.Printf("[event-%s] normalization error: %v", e.ID, err)
+			slog.ErrorContext(ctx, "normalization error", slog.String("event_id", e.ID), slog.Any("err", err))
 		}
 		if err = e.Validate(); err != nil {
-			log.Printf("[event-%s] validation failed: %v", e.ID, err)
+			slog.ErrorContext(ctx, "validation failed", slog.String("event_id", e.ID), slog.Any("err", err))
 			continue
 		}
 

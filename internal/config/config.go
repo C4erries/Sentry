@@ -3,6 +3,9 @@ package config
 import (
 	"strings"
 
+	"github.com/c4erries/Sentry/internal/logger"
+	"github.com/c4erries/Sentry/internal/redis"
+	"github.com/c4erries/Sentry/internal/storage"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -13,20 +16,13 @@ type Config struct {
 		Host string `mapstructure:"host"`
 	}
 	Kafka struct {
-		Brokers []string `mapstructure:"brokers"`
-		Topic   string   `mapstructure:"topic"`
+		Brokers         []string `mapstructure:"brokers"`
+		EventTopic      string   `mapstructure:"event_topic"`
+		ConsumerGroupID string   `mapstructure:"consumer_group_id"`
 	}
-	Redis struct {
-		Addr     string `mapstructure:"addr"`
-		Password string `mapstructure:"password"`
-		DB       int    `mapstructure:"db"`
-	}
-	Postgres struct {
-		DSN string `mapstructure:"dsn"`
-	}
-	Log struct {
-		Level string `mapstructure:"level"`
-	}
+	Redis    redis.Config
+	Postgres storage.Config
+	Log      logger.Config
 }
 
 func LoadConfig() (*Config, error) {
@@ -35,12 +31,11 @@ func LoadConfig() (*Config, error) {
 	setDefaults(v)
 
 	// 2. ENV
-	v.SetEnvPrefix("SENTRY")
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	// 3. Файл конфигурации (опционально)
-	// Ищем config.{yaml,json,toml} в cwd и /etc/sentry/
+	// Ищем config.{yaml,json,toml}
 	v.SetConfigName("config")
 	v.AddConfigPath(".")
 	v.AddConfigPath("/etc/sentry/")
@@ -54,8 +49,6 @@ func LoadConfig() (*Config, error) {
 	// 4. Flags (Cobra)
 	pflag.Int("server.port", v.GetInt("server.port"), "HTTP server port")
 	pflag.String("server.host", v.GetString("server.host"), "HTTP server host")
-	// …другие флаги…
-	//pflag.Parse()
 	v.BindPFlags(pflag.CommandLine)
 
 	// 5. Unmarshal into struct

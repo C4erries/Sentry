@@ -7,6 +7,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type Config struct {
+	DSN string `mapstructure:"dsn"`
+}
+
 type Storage struct {
 	DB     *sql.DB
 	SQ     squirrel.StatementBuilderType
@@ -14,8 +18,8 @@ type Storage struct {
 	Alerts *AlertRepository
 }
 
-func NewStorage(connStr string) (*Storage, error) {
-	db, err := sql.Open("postgres", connStr)
+func NewStorage(cfg *Config) (*Storage, error) {
+	db, err := sql.Open("postgres", cfg.DSN)
 	if err != nil {
 		return nil, err
 	}

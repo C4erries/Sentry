@@ -5,16 +5,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// serveCmd represents the serve command
+// serveCmd представляет команду запуска основного приложения
 var serveCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Запуск основного сервиса Sentry",
+	Long: `Команда запускает основной сервис:
+- HTTP сервер
+- Kafka consumer (с обработкой событий)
+- Инициализацию Redis, PostgreSQL и др.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Пример использования:
+  sentry serve
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		serve()
 	},
@@ -35,5 +37,5 @@ func init() {
 }
 
 func serve() {
-	app.Serve()
+	app.Serve(cfg)
 }

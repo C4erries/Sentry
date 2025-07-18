@@ -26,6 +26,6 @@ up:
 
 .PHONY: produce
 produce:
-	$(DOCKER_COMPOSE) exec sentry /sentry produce --type=login --user_id=123 --count=10 --country=RU --ip=0.0.0.52 --method=post --success=true
+	$(DOCKER_COMPOSE) exec sentry /sentry produce --type=login --user_id=123 --count=100 --country=UK --ip=0.0.0.52 --method=post --success=false
 .PHONY: migrate
 	$(DOCKER_COMPOSE) exec sentry /sentry migrate

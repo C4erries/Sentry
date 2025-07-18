@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"sync"
 
 	"github.com/c4erries/Sentry/internal/kafka"
@@ -20,22 +20,29 @@ func StartPool(ctx context.Context, jobs <-chan *kafka.KafkaEvent, handler Event
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			log.Printf("[worker-%d] started", workerID)
+			slog.InfoContext(ctx, "worker started", slog.Int("workerID", workerID))
 			for {
 				select {
 				case <-ctx.Done():
-					log.Printf("[worker-%d] stopping (context canceled)", workerID)
+					slog.InfoContext(ctx, "worker stopping (context canceled)", slog.Int("workerID", workerID))
 					return
 
 				case job, ok := <-jobs:
 					if !ok {
-						log.Printf("[worker-%d] stopping (jobs channel closed)", workerID)
+						slog.InfoContext(ctx, "worker stopping (jobs channel closed)", slog.Int("workerID", workerID))
 						return
 					}
 					if err := handler.Process(ctx, job.Event); err != nil {
-						log.Printf("[worker-%d] error processing event %v: %v", workerID, job, err)
+						slog.InfoContext(ctx, "worker error processing event",
+							slog.Int("workerID", workerID),
+							slog.Any("event", job.Event),
+							slog.Any("err", err),
+						)
 					} else if err := job.Commit(); err != nil {
-						log.Printf("[event-%s] commit error: %v", job.ID, err)
+						slog.InfoContext(ctx, "event commit error",
+							slog.Any("job", job),
+							slog.Any("err", err),
+						)
 					}
 				}
 			}

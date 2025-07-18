@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"context"
 	"log"
+	"log/slog"
 	"sync"
 
 	"github.com/c4erries/Sentry/internal/model"
@@ -28,7 +29,11 @@ func (d *EventDispatcher) SendAll(ctx context.Context, event *model.Event) {
 		go func(s EventSink) {
 			defer wg.Done()
 			if err := s.SendEvent(ctx, event); err != nil {
-				log.Printf("[event-dispatcher] sink-%s failed: %v", s.ID(), err)
+				slog.ErrorContext(ctx, "[event-dispatcher] sink failed",
+					slog.String("sink id", s.ID()),
+					slog.Any("event id", event.ID),
+					slog.Any("err", err),
+				)
 			}
 		}(sink)
 	}

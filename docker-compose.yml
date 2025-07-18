@@ -5,11 +5,16 @@ services:
       - "${ZOOKEEPER_CLIENT_PORT}:2021"
     environment:
       ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
-
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   kafka:
     image: confluentinc/cp-kafka:7.4.10
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "${KAFKA_PORT}:9092"
     environment:
@@ -20,6 +25,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
       KAFKA_INTER_BROKER_LISTENER_NAME: ${KAFKA_INTER_BROKER_LISTENER_NAME}
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+    stop_grace_period: 10s
+    
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest

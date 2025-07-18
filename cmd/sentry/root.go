@@ -5,32 +5,41 @@ import (
 	"os"
 
 	"github.com/c4erries/Sentry/internal/config"
+	"github.com/c4erries/Sentry/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "Sentry",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Use:   "sentry",
+	Short: "Sentry anomaly detection service",
+	Long: `Sentry — это инструмент для детектирования и обработки
+пользовательских событий в режиме реального времени.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+Доступные команды:
+  serve     Запускает HTTP‑сервер, Kafka consumer, Redis и т.д.
+  migrate   Выполняет миграции базы данных
+  produce   Генерирует и отправляет тестовые события в Kafka
+
+Для запуска сервиса просто выполните:
+  sentry
+или
+  sentry serve
+`,
+	// Если не указана подкоманда, по умолчанию выполняем serve
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// явно вызываем логику serveCmd
+		return serveCmd.RunE(serveCmd, args)
+	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+func Execute() error {
+	// Если нет аргументов, подставляем "serve"
+	if len(os.Args) < 2 {
+		os.Args = append(os.Args, "serve")
 	}
+	return rootCmd.Execute()
 }
 
 var cfg *config.Config
@@ -43,6 +52,9 @@ func init() {
 		cfg, err = config.LoadConfig()
 		if err != nil {
 			log.Fatalf("cannot load config: %v", err)
+		}
+		if err := logger.Init(&cfg.Log); err != nil {
+			log.Fatalf("cannot initialize logger: %v", err)
 		}
 	})
 

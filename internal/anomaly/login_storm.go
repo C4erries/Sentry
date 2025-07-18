@@ -59,7 +59,9 @@ func (d *LoginStormDetector) Process(ctx context.Context, e *model.Event) (*mode
 		Min: fmt.Sprintf("%f", minScore),
 		Max: fmt.Sprintf("%f", float64(nowTS)),
 	}).Result()
-
+	if len(eventIDs) > int(d.threshold) {
+		eventIDs = eventIDs[len(eventIDs)-int(d.threshold):]
+	}
 	if err != nil {
 		return nil, fmt.Errorf("redis ZRANGEBYSCORE error: %v", err)
 	}
