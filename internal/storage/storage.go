@@ -1,9 +1,8 @@
 package storage
 
 import (
-	"database/sql"
-
 	"github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
@@ -12,14 +11,14 @@ type Config struct {
 }
 
 type Storage struct {
-	DB     *sql.DB
+	DB     *sqlx.DB
 	SQ     squirrel.StatementBuilderType
 	Events *EventRepository
 	Alerts *AlertRepository
 }
 
 func NewStorage(cfg *Config) (*Storage, error) {
-	db, err := sql.Open("postgres", cfg.DSN)
+	db, err := sqlx.Open("postgres", cfg.DSN)
 	if err != nil {
 		return nil, err
 	}

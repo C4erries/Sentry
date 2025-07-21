@@ -73,6 +73,12 @@ func Serve(cfg *config.Config) {
 	go func() {
 		consumer.Start(ctx, jobs)
 	}()
+	alerts, err := postgres.Alerts.FindByUser(ctx, "#123")
+	if err != nil {
+		slog.ErrorContext(ctx, "FindByUser error", slog.Any("err", err))
+	}
+
+	slog.Info("[FindByUser]", slog.Any("alerts", alerts))
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)

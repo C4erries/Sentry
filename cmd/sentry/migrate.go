@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -48,5 +49,5 @@ func runMigrations(dsn string) {
 		log.Fatalf("migrate: up failed: %v", err)
 	}
 
-	log.Println("migrate: database is up to date")
+	slog.Info("migrate: database is up to date")
 }

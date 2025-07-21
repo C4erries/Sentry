@@ -11,11 +11,10 @@ import (
 
 type BaseEvent struct {
 	EventType  EventType `json:"event_type"`
-	UserId     string    `json:"user_id"`
+	UserID     string    `json:"user_id"`
 	Timestamp  time.Time `json:"timestamp"`
 	IP         string    `json:"ip"`
 	GeoCountry string    `json:"geo_country"`
-	Device     string    `json:"device"`
 }
 
 type Event struct {

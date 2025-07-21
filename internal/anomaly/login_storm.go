@@ -34,7 +34,7 @@ func (d *LoginStormDetector) Process(ctx context.Context, e *model.Event) (*mode
 		return nil, nil
 	}
 
-	key := fmt.Sprintf("%s:%s", d.prefix, e.UserId)
+	key := fmt.Sprintf("%s:%s", d.prefix, e.UserID)
 	nowTS := e.Timestamp.Unix()
 
 	d.redis.ZAdd(ctx, key, redis.Z{
@@ -68,7 +68,7 @@ func (d *LoginStormDetector) Process(ctx context.Context, e *model.Event) (*mode
 
 	return model.NewAlert(
 		model.AnomalyLoginStorm,
-		[]*model.Event{e},
+		e,
 		model.AlertWarning,
 		time.Now(),
 		model.LoginStormData{

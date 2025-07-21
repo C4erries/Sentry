@@ -58,7 +58,7 @@ func init() {
 
 func runProduce() {
 	baseEvent.EventType = model.EventType(payloadType)
-	baseEvent.UserId = "#" + strconv.Itoa(userId)
+	baseEvent.UserID = "#" + strconv.Itoa(userId)
 
 	p, err := kafka.NewProducer([]string{os.Getenv("KAFKA_ADDR")}, "events_topic")
 	if err != nil {

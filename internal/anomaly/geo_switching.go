@@ -39,7 +39,7 @@ func (d *GeoSwitchingDetector) Process(ctx context.Context, e *model.Event) (*mo
 	currCountry := e.GeoCountry // ?
 	nowTS := e.Timestamp.Unix()
 
-	key := fmt.Sprintf("%s:%s", d.prefix, e.UserId)
+	key := fmt.Sprintf("%s:%s", d.prefix, e.UserID)
 
 	exists, err := d.redis.Exists(ctx, key).Result()
 	if exists == 0 {
@@ -92,7 +92,7 @@ func (d *GeoSwitchingDetector) Process(ctx context.Context, e *model.Event) (*mo
 
 	alert := model.NewAlert(
 		model.AnomalyGeoSwitching,
-		[]*model.Event{e},
+		e,
 		model.AlertWarning,
 		time.Now(),
 		model.GeoSwitchingData{

@@ -1,6 +1,9 @@
 package model
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type EventType string
 
@@ -9,14 +12,47 @@ const (
 	EventTransaction EventType = "transaction"
 )
 
-func (e EventType) Validate() error {
-	switch e {
-	case EventLogin, EventTransaction:
-		return nil
+var validEventTypes = []EventType{
+	EventLogin,
+	EventTransaction,
+}
+
+func (eventType EventType) Validate() error {
+	for _, valid := range validEventTypes {
+		if eventType == valid {
+			return nil
+		}
 	}
 	return fmt.Errorf("unknown event type")
 }
 
-func (e EventType) String() string {
-	return string(e)
+func (eventType EventType) String() string {
+	return string(eventType)
+}
+
+func (eventType EventType) UnmarshalData(raw json.RawMessage) (interface{}, error) {
+	switch eventType {
+	case EventLogin:
+		var d LoginData
+		if err := json.Unmarshal(raw, &d); err != nil {
+			return nil, err
+		}
+		return d, nil
+	case EventTransaction:
+		var d TransactionData
+		if err := json.Unmarshal(raw, &d); err != nil {
+			return nil, err
+		}
+		return d, nil
+	default:
+		return nil, fmt.Errorf("unknown event type: %s", eventType)
+	}
+}
+
+func ParseEventType(str string) (EventType, error) {
+	eventType := EventType(str)
+	if err := eventType.Validate(); err != nil {
+		return "", err
+	}
+	return eventType, nil
 }
