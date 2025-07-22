@@ -34,7 +34,7 @@ func ParseAnomalyType(s string) (AnomalyType, error) {
 	return a, nil
 }
 
-func (anomalyType AnomalyType) UnmarshalData(raw json.RawMessage) (interface{}, error) {
+func (anomalyType AnomalyType) UnmarshalData(raw []byte) (interface{}, error) {
 	switch anomalyType {
 	case AnomalyLoginStorm:
 		var d LoginStormData
@@ -51,4 +51,8 @@ func (anomalyType AnomalyType) UnmarshalData(raw json.RawMessage) (interface{}, 
 	default:
 		return nil, fmt.Errorf("unknown anomaly type: %v", anomalyType)
 	}
+}
+
+func (anomalyType AnomalyType) String() string {
+	return string(anomalyType)
 }

@@ -29,3 +29,7 @@ func ParseAlertLevel(s string) (AlertLevel, error) {
 	}
 	return a, nil
 }
+
+func (alertLevel AlertLevel) String() string {
+	return string(alertLevel)
+}

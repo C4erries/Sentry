@@ -1,9 +1,13 @@
 package storage
 
 import (
-	"github.com/Masterminds/squirrel"
-	"github.com/jmoiron/sqlx"
+	"log/slog"
+
+	"github.com/c4erries/Sentry/internal/logger"
 	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	lg "gorm.io/gorm/logger"
 )
 
 type Config struct {
@@ -11,27 +15,26 @@ type Config struct {
 }
 
 type Storage struct {
-	DB     *sqlx.DB
-	SQ     squirrel.StatementBuilderType
+	DB     *gorm.DB
 	Events *EventRepository
 	Alerts *AlertRepository
 }
 
 func NewStorage(cfg *Config) (*Storage, error) {
-	db, err := sqlx.Open("postgres", cfg.DSN)
+	gormLogger := logger.NewSlogGormLogger(slog.Default(), lg.Info)
+	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
+		Logger: gormLogger,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	sq := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
-
 	s := &Storage{
 		DB: db,
-		SQ: sq,
 	}
 
-	s.Events = NewEventRepository(db, sq)
-	s.Alerts = NewAlertRepository(db, sq)
+	s.Events = NewEventRepository(db)
+	s.Alerts = NewAlertRepository(db)
 
 	return s, nil
 }

@@ -30,7 +30,7 @@ func (eventType EventType) String() string {
 	return string(eventType)
 }
 
-func (eventType EventType) UnmarshalData(raw json.RawMessage) (interface{}, error) {
+func (eventType EventType) UnmarshalData(raw []byte) (interface{}, error) {
 	switch eventType {
 	case EventLogin:
 		var d LoginData

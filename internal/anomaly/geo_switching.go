@@ -37,7 +37,7 @@ func (d *GeoSwitchingDetector) ID() string {
 
 func (d *GeoSwitchingDetector) Process(ctx context.Context, e *model.Event) (*model.Alert, error) {
 	currCountry := e.GeoCountry // ?
-	nowTS := e.Timestamp.Unix()
+	nowTS := e.CreatedAt.Unix()
 
 	key := fmt.Sprintf("%s:%s", d.prefix, e.UserID)
 
@@ -99,7 +99,7 @@ func (d *GeoSwitchingDetector) Process(ctx context.Context, e *model.Event) (*mo
 			FromCountry: prevCountry,
 			ToCountry:   currCountry,
 			FromEventID: prevID,
-			ToEventID:   e.ID,
+			ToEventID:   e.ID.String(),
 			IntervalSec: delta,
 		},
 	)

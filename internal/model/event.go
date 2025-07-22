@@ -12,21 +12,21 @@ import (
 type BaseEvent struct {
 	EventType  EventType `json:"event_type"`
 	UserID     string    `json:"user_id"`
-	Timestamp  time.Time `json:"timestamp"`
+	CreatedAt  time.Time `json:"created_at"`
 	IP         string    `json:"ip"`
 	GeoCountry string    `json:"geo_country"`
 }
 
 type Event struct {
 	BaseEvent
-	ID   string      `json:"id"` //uuid
+	ID   uuid.UUID   `json:"id"` //uuid
 	Data interface{} `json:"data"`
 }
 
 func NewEvent(baseEvent BaseEvent, data interface{}) (*Event, error) {
 	event := &Event{
 		BaseEvent: baseEvent,
-		ID:        uuid.New().String(),
+		ID:        uuid.New(),
 		Data:      data,
 	}
 
@@ -38,9 +38,6 @@ func NewEvent(baseEvent BaseEvent, data interface{}) (*Event, error) {
 }
 
 func (e *Event) Validate() error {
-	if _, err := uuid.Parse(e.ID); err != nil {
-		return fmt.Errorf("invalid UUID: %v", err)
-	}
 	if err := e.BaseEvent.EventType.Validate(); err != nil {
 		return fmt.Errorf("invalid EventType: %v", err)
 	}

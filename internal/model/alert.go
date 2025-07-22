@@ -7,7 +7,7 @@ import (
 )
 
 type Alert struct {
-	ID         string      `json:"id"`
+	ID         uuid.UUID   `json:"id"`
 	Rule       AnomalyType `json:"rule"`
 	Event      *Event      `json:"event"`
 	Level      AlertLevel  `json:"level"`
@@ -21,7 +21,7 @@ func NewAlert(rule AnomalyType, event *Event, level AlertLevel, detectedAt time.
 		Event:      event,
 		Level:      level,
 		DetectedAt: detectedAt,
-		ID:         uuid.New().String(),
+		ID:         uuid.New(),
 		Data:       data,
 	}
 }

@@ -84,7 +84,7 @@ func runProduce() {
 		}
 
 		currentEvent := baseEvent
-		currentEvent.Timestamp = time.Now().UTC()
+		currentEvent.CreatedAt = time.Now().UTC()
 
 		e, err := model.NewEvent(currentEvent, data)
 		if err != nil {

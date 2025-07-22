@@ -5,18 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Masterminds/squirrel"
 	"github.com/c4erries/Sentry/internal/model"
-	"github.com/jmoiron/sqlx"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type EventRepository struct {
-	db *sqlx.DB
-	sq squirrel.StatementBuilderType
+	db *gorm.DB
 }
 
-func NewEventRepository(db *sqlx.DB, sq squirrel.StatementBuilderType) *EventRepository {
-	return &EventRepository{db: db, sq: sq}
+func NewEventRepository(db *gorm.DB) *EventRepository {
+	return &EventRepository{db: db}
 }
 
 func (r *EventRepository) Save(ctx context.Context, event *model.Event) error {
@@ -25,19 +24,18 @@ func (r *EventRepository) Save(ctx context.Context, event *model.Event) error {
 		return fmt.Errorf("marshal event data: %w", err)
 	}
 
-	query, args, err := squirrel.
-		Insert("events").
-		Columns("id", "user_id", "event_type", "created_at", "geo_country", "ip", "data").
-		Values(event.ID, event.UserID, event.EventType.String(), event.Timestamp, event.GeoCountry, event.IP, data).
-		PlaceholderFormat(squirrel.Dollar).
-		ToSql()
-	if err != nil {
-		return fmt.Errorf("build insert event: %w", err)
+	eventDB := EventDB{
+		ID:         event.ID.String(),
+		UserID:     event.UserID,
+		EventType:  event.EventType.String(),
+		CreatedAt:  event.CreatedAt,
+		GeoCountry: event.GeoCountry,
+		IP:         event.IP,
+		Data:       datatypes.JSON(data),
 	}
 
-	_, err = r.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return fmt.Errorf("exec insert event: %w", err)
+	if err := r.db.WithContext(ctx).Create(&eventDB).Error; err != nil {
+		return fmt.Errorf("insert event: %w", err)
 	}
 
 	return nil

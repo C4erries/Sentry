@@ -1,30 +1,41 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/c4erries/Sentry/internal/model"
+	"github.com/google/uuid"
+	"gorm.io/datatypes"
 )
 
 type AlertDB struct {
-	ID         string          `db:"alert_id"`
-	Rule       string          `db:"alert_rule"`
-	Level      string          `db:"alert_level"`
-	DetectedAt time.Time       `db:"alert_detected_at"`
-	RawData    json.RawMessage `db:"alert_data"`
-	Event      EventDB         `db:"-"`
+	ID         string         `gorm:"column:id;primaryKey"`
+	Rule       string         `gorm:"column:rule"`
+	Level      string         `gorm:"column:level"`
+	DetectedAt time.Time      `gorm:"column:detected_at"`
+	Data       datatypes.JSON `gorm:"column:data"`
+
+	EventID string  `gorm:"column:event_id"`
+	Event   EventDB `gorm:"foreignKey:EventID;references:ID"`
+}
+
+func (AlertDB) TableName() string {
+	return "alerts"
 }
 
 type EventDB struct {
-	ID         string          `db:"event_id"`
-	UserID     string          `db:"event_user_id"`
-	Timestamp  time.Time       `db:"event_timestamp"`
-	EventType  string          `db:"event_type"`
-	IP         string          `db:"event_ip"`
-	GeoCountry string          `db:"event_geo_country"`
-	RawData    json.RawMessage `db:"event_data"`
+	ID         string         `gorm:"column:id;primaryKey"`
+	UserID     string         `gorm:"column:user_id"`
+	EventType  string         `gorm:"column:event_type"`
+	CreatedAt  time.Time      `gorm:"column:created_at"`
+	IP         string         `gorm:"column:ip"`
+	GeoCountry string         `gorm:"column:geo_country"`
+	Data       datatypes.JSON `gorm:"column:data"`
+}
+
+func (EventDB) TableName() string {
+	return "events"
 }
 
 func (a *AlertDB) ToAlert() (model.Alert, error) {
@@ -34,9 +45,12 @@ func (a *AlertDB) ToAlert() (model.Alert, error) {
 	if err != nil {
 		return model.Alert{}, fmt.Errorf("can't convert that eventDB to event: %v", err)
 	}
-
+	id, err := uuid.Parse(a.ID)
+	if err != nil {
+		return model.Alert{}, fmt.Errorf("uuid parsing error: %v", err)
+	}
 	alert := model.Alert{
-		ID:         a.ID,
+		ID:         id,
 		DetectedAt: a.DetectedAt,
 		Event:      &event,
 	}
@@ -46,7 +60,7 @@ func (a *AlertDB) ToAlert() (model.Alert, error) {
 		return model.Alert{}, err
 	}
 
-	alert.Data, err = alert.Rule.UnmarshalData(a.RawData)
+	alert.Data, err = alert.Rule.UnmarshalData(a.Data)
 	if err != nil {
 		return model.Alert{}, err
 	}
@@ -65,17 +79,20 @@ func (e *EventDB) ToEvent() (model.Event, error) {
 		return model.Event{}, fmt.Errorf("can't parse event type: %w", err)
 	}
 
-	data, err := eventType.UnmarshalData(e.RawData)
+	data, err := eventType.UnmarshalData(e.Data)
 	if err != nil {
 		return model.Event{}, fmt.Errorf("can't unmarshal data: %w", err)
 	}
-
+	id, err := uuid.Parse(e.ID)
+	if err != nil {
+		return model.Event{}, fmt.Errorf("uuid parsing error: %w", err)
+	}
 	event := model.Event{
-		ID: e.ID,
+		ID: id,
 		BaseEvent: model.BaseEvent{
 			EventType:  eventType,
 			UserID:     e.UserID,
-			Timestamp:  e.Timestamp,
+			CreatedAt:  e.CreatedAt,
 			IP:         e.IP,
 			GeoCountry: e.GeoCountry,
 		},

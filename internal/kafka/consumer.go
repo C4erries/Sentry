@@ -62,10 +62,10 @@ func (c *Consumer) Start(ctx context.Context, out chan *KafkaEvent) {
 			continue
 		}
 		if err = e.Normalize(); err != nil {
-			slog.ErrorContext(ctx, "normalization error", slog.String("event_id", e.ID), slog.Any("err", err))
+			slog.ErrorContext(ctx, "normalization error", slog.String("event_id", e.ID.String()), slog.Any("err", err))
 		}
 		if err = e.Validate(); err != nil {
-			slog.ErrorContext(ctx, "validation failed", slog.String("event_id", e.ID), slog.Any("err", err))
+			slog.ErrorContext(ctx, "validation failed", slog.String("event_id", e.ID.String()), slog.Any("err", err))
 			continue
 		}
 

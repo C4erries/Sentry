@@ -35,7 +35,7 @@ func (d *LoginStormDetector) Process(ctx context.Context, e *model.Event) (*mode
 	}
 
 	key := fmt.Sprintf("%s:%s", d.prefix, e.UserID)
-	nowTS := e.Timestamp.Unix()
+	nowTS := e.CreatedAt.Unix()
 
 	d.redis.ZAdd(ctx, key, redis.Z{
 		Score:  float64(nowTS),
