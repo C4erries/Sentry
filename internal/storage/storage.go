@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/c4erries/Sentry/internal/logger"
@@ -37,4 +38,13 @@ func NewStorage(cfg *Config) (*Storage, error) {
 	s.Alerts = NewAlertRepository(db)
 
 	return s, nil
+}
+
+// TODO?: реализовать получение sql.DB раньше, а тут лишь вызывать закрытие
+func (s *Storage) Close() error {
+	sqlDB, err := s.DB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get *sql.DB: %v", err)
+	}
+	return sqlDB.Close()
 }

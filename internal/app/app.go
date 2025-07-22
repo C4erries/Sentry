@@ -32,10 +32,6 @@ func Serve(cfg *config.Config) {
 		slog.ErrorContext(ctx, "failed to connect to db", slog.Any("err", err))
 		os.Exit(1)
 	}
-	sqlDB, err := postgres.DB.DB()
-	if err != nil {
-		slog.ErrorContext(ctx, "failed to get *sql.DB", slog.Any("err", err))
-	}
 
 	storageSink := dispatcher.NewStorageSink(postgres.Events, postgres.Alerts)
 
@@ -93,7 +89,9 @@ func Serve(cfg *config.Config) {
 	close(jobs)
 	close(alertDispatcher.Chan)
 	close(eventDispatcher.Chan)
-	sqlDB.Close()
+	if err := postgres.Close(); err != nil {
+		slog.Error("postgres close error", slog.Any("err", err))
+	}
 	wg.Wait()
 	slog.InfoContext(ctx, "Service stoped.")
 }
