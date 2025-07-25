@@ -1,8 +1,10 @@
-package cmd
+package main
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
+	"os"
 	"strconv"
 	"time"
 
@@ -56,11 +58,12 @@ func init() {
 
 func runProduce() {
 	baseEvent.EventType = model.EventType(payloadType)
-	baseEvent.UserId = "#" + strconv.Itoa(userId)
+	baseEvent.UserID = "#" + strconv.Itoa(userId)
 
-	p, err := kafka.NewProducer([]string{"0.0.0.0:29092"}, "events_topic")
+	p, err := kafka.NewProducer([]string{os.Getenv("KAFKA_ADDR")}, "events_topic")
 	if err != nil {
-		log.Fatalf("create new producer error: %v", err)
+		slog.Error("create new producer error", slog.Any("err", err))
+		os.Exit(1)
 	}
 	defer p.Close()
 
@@ -76,15 +79,17 @@ func runProduce() {
 		case model.EventTransaction:
 			data = transactionData
 		default:
-			log.Fatalf("data is not assignable for that event: %v", baseEvent.EventType)
+			slog.ErrorContext(ctx, "data is not assignable.", slog.Any("err", fmt.Errorf("unknown event type: %s", baseEvent.EventType.String())))
+			os.Exit(1)
 		}
 
 		currentEvent := baseEvent
-		currentEvent.Timestamp = time.Now().UTC()
+		currentEvent.CreatedAt = time.Now().UTC()
 
 		e, err := model.NewEvent(currentEvent, data)
 		if err != nil {
-			log.Fatalf("NewEvent error: %v", err)
+			slog.ErrorContext(ctx, "NewEvent creation failed", slog.Any("err", err))
+			os.Exit(1)
 			return
 		}
 		es = append(es, e)
@@ -92,6 +97,7 @@ func runProduce() {
 	}
 
 	if err = p.ProduceBatch(ctx, es...); err != nil {
-		log.Fatalf("produce error: %v", err)
+		slog.ErrorContext(ctx, "produce batch failed", slog.Any("err", err))
+		os.Exit(1)
 	}
 }

@@ -35,7 +35,7 @@ func (p *Producer) Produce(ctx context.Context, e model.Event) error {
 	}
 
 	msg := kafka.Message{
-		Key:   []byte(e.UserId),
+		Key:   []byte(e.UserID),
 		Value: data,
 	}
 
@@ -56,7 +56,7 @@ func (p *Producer) ProduceBatch(ctx context.Context, evs ...*model.Event) error 
 		}
 
 		msg := kafka.Message{
-			Key:   []byte(e.UserId),
+			Key:   []byte(e.UserID),
 			Value: data,
 		}
 		msgs = append(msgs, msg)

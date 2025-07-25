@@ -34,8 +34,8 @@ func (d *LoginStormDetector) Process(ctx context.Context, e *model.Event) (*mode
 		return nil, nil
 	}
 
-	key := fmt.Sprintf("%s:%s", d.prefix, e.UserId)
-	nowTS := e.Timestamp.Unix()
+	key := fmt.Sprintf("%s:%s", d.prefix, e.UserID)
+	nowTS := e.CreatedAt.Unix()
 
 	d.redis.ZAdd(ctx, key, redis.Z{
 		Score:  float64(nowTS),
@@ -59,14 +59,16 @@ func (d *LoginStormDetector) Process(ctx context.Context, e *model.Event) (*mode
 		Min: fmt.Sprintf("%f", minScore),
 		Max: fmt.Sprintf("%f", float64(nowTS)),
 	}).Result()
-
+	if len(eventIDs) > int(d.threshold) {
+		eventIDs = eventIDs[len(eventIDs)-int(d.threshold):]
+	}
 	if err != nil {
 		return nil, fmt.Errorf("redis ZRANGEBYSCORE error: %v", err)
 	}
 
 	return model.NewAlert(
 		model.AnomalyLoginStorm,
-		[]*model.Event{e},
+		e,
 		model.AlertWarning,
 		time.Now(),
 		model.LoginStormData{

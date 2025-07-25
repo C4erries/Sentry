@@ -2,7 +2,7 @@ package anomaly
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/c4erries/Sentry/internal/model"
@@ -30,7 +30,10 @@ func (r *DetectorRegistry) ProcessAll(ctx context.Context, e *model.Event) []*mo
 	for _, d := range r.detectors {
 		alert, err := d.Process(ctx, e)
 		if err != nil {
-			log.Printf("[Detector-%s] error: %v", d.ID(), err)
+			slog.InfoContext(ctx, "Detection failed",
+				slog.String("detector id", d.ID()),
+				slog.Any("err", err),
+			)
 			continue
 		}
 		if alert == nil {

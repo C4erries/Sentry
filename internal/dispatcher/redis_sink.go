@@ -1,4 +1,4 @@
-package alert
+package dispatcher
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func (s *RedisSink) ID() string {
 	return "redis_sink"
 }
 
-func (s *RedisSink) Send(ctx context.Context, alert *model.Alert) error {
+func (s *RedisSink) SendAlert(ctx context.Context, alert *model.Alert) error {
 	err := s.cache.SaveAlert(ctx, alert)
 	if err != nil {
 		return fmt.Errorf("RedisSink can't SEND [alert-%s]: %v", alert.ID, err)

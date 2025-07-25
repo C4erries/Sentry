@@ -7,6 +7,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type Config struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+}
+
 type IntCmd = redis.IntCmd
 type BoolCmd = redis.BoolCmd
 type StringCmd = redis.StringCmd

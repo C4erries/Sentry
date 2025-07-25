@@ -15,6 +15,7 @@ RUN go build -o sentry ./cmd/sentry
 FROM alpine:latest
 
 COPY --from=builder /app/sentry /sentry
+COPY --from=builder /app/migrations /migrations
 
 WORKDIR /
 
