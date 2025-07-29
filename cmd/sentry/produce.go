@@ -59,8 +59,12 @@ func init() {
 func runProduce() {
 	baseEvent.EventType = model.EventType(payloadType)
 	baseEvent.UserID = "#" + strconv.Itoa(userId)
-
-	p, err := kafka.NewProducer([]string{os.Getenv("KAFKA_ADDR")}, "events_topic")
+	wr, err := kafka.NewWriter([]string{os.Getenv("KAFKA_ADDR")}, "events_topic")
+	if err != nil {
+		slog.Error("create new writer error", slog.Any("err", err))
+		os.Exit(1)
+	}
+	p, err := kafka.NewProducer(wr)
 	if err != nil {
 		slog.Error("create new producer error", slog.Any("err", err))
 		os.Exit(1)

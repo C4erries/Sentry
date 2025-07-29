@@ -3,7 +3,7 @@ package kafka
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -24,22 +24,19 @@ type KafkaEvent struct {
 	Commit func() error
 }
 
-type Consumer struct {
-	reader *kafka.Reader
+//go:generate go run github.com/vektra/mockery/v2@v2.53.4 --name=Reader
+type Reader interface {
+	ReadMessage(ctx context.Context) (kafka.Message, error)
+	CommitMessages(ctx context.Context, msgs ...kafka.Message) error
+	Close() error
 }
 
-func NewConsumer(brokers []string, topic string, groupID string) (*Consumer, error) {
-	if groupID == "" {
-		return nil, fmt.Errorf("group id can't be empty")
-	}
-	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:        brokers,
-		Topic:          topic,
-		GroupID:        groupID,
-		SessionTimeout: sessionTimeout,
-		CommitInterval: 0,
-	})
-	return &Consumer{reader: r}, nil
+type Consumer struct {
+	reader Reader
+}
+
+func NewConsumer(reader Reader) (*Consumer, error) {
+	return &Consumer{reader: reader}, nil
 }
 
 func (c *Consumer) Start(ctx context.Context, out chan *KafkaEvent) {
@@ -48,10 +45,12 @@ func (c *Consumer) Start(ctx context.Context, out chan *KafkaEvent) {
 	for {
 		m, err := c.reader.ReadMessage(ctx)
 		if err != nil {
-			if ctx.Err() != nil {
-				slog.InfoContext(ctx, "Context canceled, stoping consumer")
+			// Если контекст отменён — считаем это нормальным завершением
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				slog.InfoContext(ctx, "Context canceled, stopping consumer")
 				break
 			}
+			// Для других ошибок логируем предупреждение и продолжаем попытки чтения
 			slog.WarnContext(ctx, "Fetch kafka message error", slog.Any("err", err))
 			continue
 		}

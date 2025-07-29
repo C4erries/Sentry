@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/c4erries/Sentry/internal/model"
+	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -39,4 +40,9 @@ func (r *EventRepository) Save(ctx context.Context, event *model.Event) error {
 	}
 
 	return nil
+}
+
+func (r *EventRepository) EventByID(ctx context.Context, id uuid.UUID) (*model.Event, error) {
+	panic("unimplemented")
+	return &model.Event{}, nil
 }

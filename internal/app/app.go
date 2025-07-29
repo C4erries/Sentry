@@ -62,24 +62,22 @@ func Serve(cfg *config.Config) {
 	jobs := make(chan *kafka.KafkaEvent, 100)
 	wg := worker.StartPool(ctx, jobs, processor, 5)
 
-	consumer, err := kafka.NewConsumer(
+	kr, err := kafka.NewReader(
 		cfg.Kafka.Brokers,
 		cfg.Kafka.EventTopic,
 		cfg.Kafka.ConsumerGroupID,
 	)
 	if err != nil {
-		slog.ErrorContext(ctx, "cannot create consumer", slog.Any("err", err))
+		slog.ErrorContext(ctx, "cannot create kafka reader", slog.Any("err", err))
 		os.Exit(1)
+	}
+	consumer, err := kafka.NewConsumer(kr)
+	if err != nil {
+		slog.ErrorContext(ctx, "can`t create kafka consumer", slog.Any("err", err))
 	}
 	go func() {
 		consumer.Start(ctx, jobs)
 	}()
-	alerts, err := postgres.Alerts.FindByUser(ctx, "#123")
-	if err != nil {
-		slog.ErrorContext(ctx, "FindByUser error", slog.Any("err", err))
-	}
-
-	slog.Info("[FindByUser]", slog.Any("alerts", alerts))
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)

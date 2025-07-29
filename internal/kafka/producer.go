@@ -4,28 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/c4erries/Sentry/internal/model"
 	"github.com/segmentio/kafka-go"
 )
 
+//go:generate go run github.com/vektra/mockery/v2@v2.53.4 --name=Writer
+type Writer interface {
+	WriteMessages(ctx context.Context, msgs ...kafka.Message) error
+	Close() error
+}
+
 type Producer struct {
-	writer *kafka.Writer
+	writer Writer
 }
 
-func NewProducer(address []string, topic string) (*Producer, error) {
-	w := &kafka.Writer{
-		Addr:         kafka.TCP(address...),
-		Topic:        topic,
-		Balancer:     &kafka.Hash{},
-		BatchTimeout: 10 * time.Millisecond,
-		RequiredAcks: kafka.RequireAll,
-	}
-	return &Producer{writer: w}, nil
+func NewProducer(writer Writer) (*Producer, error) {
+	return &Producer{writer: writer}, nil
 }
 
-func (p *Producer) Produce(ctx context.Context, e model.Event) error {
+func (p *Producer) Produce(ctx context.Context, e *model.Event) error {
 	if err := e.Validate(); err != nil {
 		return fmt.Errorf("event:%s -- validation failed:%v", e.ID, err)
 	}
